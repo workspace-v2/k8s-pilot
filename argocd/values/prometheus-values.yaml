@@ -7,8 +7,24 @@ server:
 
   persistentVolume:
     enabled: true
-    storageClass: local-path
-    size: 2Gi
+    existingClaim: prometheus-server-data
+
+extraManifests:
+  - |
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: prometheus-server-data
+      namespace: {{ .Release.Namespace }}
+      annotations:
+        argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 2Gi
 
 alertmanager:
   # Alertmanager를 함께 배포해 Prometheus 알림을 처리

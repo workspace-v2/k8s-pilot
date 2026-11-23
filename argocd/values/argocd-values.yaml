@@ -1,14 +1,14 @@
 applicationSet:
   nodeSelector:
-    kubernetes.io/hostname: ip-172-31-35-123
+    monitoring: "yes"
 
 controller:
   nodeSelector:
-    kubernetes.io/hostname: ip-172-31-35-123
+    monitoring: "yes"
 
 repoServer:
   nodeSelector:
-    kubernetes.io/hostname: ip-172-31-35-123
+    monitoring: "yes"
 
 server:
   extraArgs:
@@ -18,7 +18,7 @@ server:
     enabled: false
 
   nodeSelector:
-    kubernetes.io/hostname: ip-172-31-35-123
+    monitoring: "yes"
 
   service:
     type: NodePort
