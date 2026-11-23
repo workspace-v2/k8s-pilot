@@ -16,7 +16,7 @@ spec:
           - $values/argocd/values/argocd-values.yaml
 
     - repoURL: https://github.com/workspace-v2/k8s-pilot.git
-      targetRevision: main
+      targetRevision: fix/6
       ref: values
 
   destination:
