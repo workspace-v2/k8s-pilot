@@ -1,0 +1,15 @@
+image:
+  ref: ""
+  pullSecret: blue-green-lab-ghcr
+lab:
+  revision: ""
+promotionGate:
+  enabled: true
+postPromotion:
+  enabled: true
+mysql:
+  host: mysql
+  database: blue_green_lab
+  username: blue_green_lab
+redis:
+  host: redis

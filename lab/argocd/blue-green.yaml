@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: burger-lab
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/workspace-v2/k8s-pilot.git
+    targetRevision: main
+    path: lab/blue-green
+    helm:
+      valueFiles:
+        - values-gitops.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: blue-green-lab
+  ignoreDifferences:
+    - kind: Service
+      name: burger-lab-active
+      namespace: blue-green-lab
+      jsonPointers:
+        - /spec/selector/rollouts-pod-template-hash
+    - kind: Service
+      name: burger-lab-preview
+      namespace: blue-green-lab
+      jsonPointers:
+        - /spec/selector/rollouts-pod-template-hash
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - RespectIgnoreDifferences=true
+      - FailOnSharedResource=true
