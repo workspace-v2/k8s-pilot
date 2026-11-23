@@ -9,6 +9,13 @@ lab:
   revision: ""
   failBrands: false
 
+promotionGate:
+  enabled: false
+
+postPromotion:
+  enabled: false
+  prometheusAddress: http://prometheus-server.monitoring.svc.cluster.local
+
 mysql:
   host: ""
   database: ""

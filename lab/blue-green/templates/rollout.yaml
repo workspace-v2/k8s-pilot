@@ -11,11 +11,18 @@ spec:
       app.kubernetes.io/name: blue-green-lab
   template:
     metadata:
+      {{- if .Values.postPromotion.enabled }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "8081"
+      {{- end }}
       labels:
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/name: blue-green-lab
     spec:
       automountServiceAccountToken: false
+      enableServiceLinks: false
       {{- with .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ . | quote }}
@@ -43,6 +50,9 @@ spec:
             - { name: SPRING_PROFILES_ACTIVE, value: blue-green-lab }
             - { name: APP_LAB_REVISION, value: {{ required "lab.revision is required" .Values.lab.revision | quote }} }
             - { name: APP_LAB_BRANDS_FAILURE, value: {{ .Values.lab.failBrands | quote }} }
+            {{- if .Values.postPromotion.enabled }}
+            - { name: APP_LAB_BRANDS_FAILURE_FILE, value: /tmp/blue-green-fail-brands }
+            {{- end }}
             - { name: DB_HOST, value: {{ required "mysql.host is required" .Values.mysql.host | quote }} }
             - { name: DB_NAME, value: {{ required "mysql.database is required" .Values.mysql.database | quote }} }
             - { name: DB_USERNAME, value: {{ required "mysql.username is required" .Values.mysql.username | quote }} }
@@ -72,4 +82,21 @@ spec:
     blueGreen:
       activeService: {{ .Release.Name }}-active
       previewService: {{ .Release.Name }}-preview
-      autoPromotionEnabled: false
+      autoPromotionEnabled: {{ .Values.promotionGate.enabled }}
+      {{- if .Values.promotionGate.enabled }}
+      prePromotionAnalysis:
+        templates:
+          - templateName: {{ .Release.Name }}-preview-smoke
+        args:
+          - name: expected-revision
+            value: {{ .Values.lab.revision | quote }}
+      {{- end }}
+      {{- if .Values.postPromotion.enabled }}
+      postPromotionAnalysis:
+        templates:
+          - templateName: {{ .Release.Name }}-active-errors
+        args:
+          - name: revision
+            valueFrom:
+              podTemplateHashValue: Latest
+      {{- end }}
