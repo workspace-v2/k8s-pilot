@@ -1,0 +1,21 @@
+replicaCount: 2
+
+image:
+  ref: ""
+  pullPolicy: IfNotPresent
+  pullSecret: ""
+
+lab:
+  revision: ""
+  failBrands: false
+
+mysql:
+  host: ""
+  database: ""
+  username: ""
+
+redis:
+  host: ""
+  tls: false
+
+existingSecret: blue-green-lab-credentials

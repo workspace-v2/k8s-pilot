@@ -1,6 +1,6 @@
 apiVersion: v2
-name: amumal-backend
-description: Helm chart for Amumal backend
+name: community-service
+description: Helm chart for the community-service kubeadm deployment
 type: application
-version: 0.1.0
-appVersion: "1.0.0"
+version: 0.2.0
+appVersion: "25aebbc"

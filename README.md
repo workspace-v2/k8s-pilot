@@ -34,3 +34,9 @@ Kubernetes 기반 애플리케이션 배포 환경을 구축하고, **GitHub Act
 - **CI/CD 책임 분리:** GitHub Actions는 이미지 빌드·발행을 담당하고, Argo CD는 Kubernetes 배포 상태를 관리하도록 구성
 - **App of Apps:** Root Application으로 백엔드와 플랫폼 컴포넌트의 배포 선언을 통합 관리
 - **모니터링:** Prometheus·Grafana로 메트릭 조회 환경을 구성하고, Vector·Loki로 Kubernetes 로그를 중앙 수집하도록 구성
+
+## 4. kubeadm 실습
+
+[AWS 인프라 준비](https://github.com/workspace-v2/terraform/tree/main/k8s-pilot) 후 [클러스터 조인과 Helm 배포 절차](lab/README.md)를 따라 실습 환경을 재현할 수 있습니다.
+
+실습 환경의 `community-service`도 기존 `root-app → amumal-server → chart/` 경로로 배포합니다. 첫 동기화는 워커에 올린 이미지 태그를 `chart/values.yaml`에서 지정합니다.

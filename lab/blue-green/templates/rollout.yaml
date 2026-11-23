@@ -1,0 +1,75 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/name: blue-green-lab
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/name: blue-green-lab
+    spec:
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ . | quote }}
+      {{- end }}
+      nodeSelector:
+        k8s-pilot/worker: "true"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/instance: {{ .Release.Name }}
+                    app.kubernetes.io/name: blue-green-lab
+      containers:
+        - name: community-service
+          image: {{ required "image.ref is required" .Values.image.ref | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - { name: http, containerPort: 3000 }
+            - { name: management, containerPort: 8081 }
+          env:
+            - { name: SPRING_PROFILES_ACTIVE, value: blue-green-lab }
+            - { name: APP_LAB_REVISION, value: {{ required "lab.revision is required" .Values.lab.revision | quote }} }
+            - { name: APP_LAB_BRANDS_FAILURE, value: {{ .Values.lab.failBrands | quote }} }
+            - { name: DB_HOST, value: {{ required "mysql.host is required" .Values.mysql.host | quote }} }
+            - { name: DB_NAME, value: {{ required "mysql.database is required" .Values.mysql.database | quote }} }
+            - { name: DB_USERNAME, value: {{ required "mysql.username is required" .Values.mysql.username | quote }} }
+            - { name: REDIS_HOST, value: {{ required "redis.host is required" .Values.redis.host | quote }} }
+            - { name: REDIS_SSL_ENABLED, value: {{ .Values.redis.tls | quote }} }
+            - { name: JAVA_TOOL_OPTIONS, value: "-XX:MaxRAMPercentage=65" }
+            {{- range $key := list "DB_PASSWORD" "REDIS_PASSWORD" "JWT_SECRET" }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef: { name: {{ $.Values.existingSecret | quote }}, key: {{ $key }} }
+            {{- end }}
+          resources:
+            requests: { cpu: 150m, memory: 512Mi }
+            limits: { memory: 1200Mi }
+          startupProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            timeoutSeconds: 4
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            timeoutSeconds: 5
+  strategy:
+    blueGreen:
+      activeService: {{ .Release.Name }}-active
+      previewService: {{ .Release.Name }}-preview
+      autoPromotionEnabled: false

@@ -28,6 +28,10 @@ providers:
   kubernetesIngress:
     # 표준 Kubernetes Ingress 리소스를 감시
     enabled: true
+    publishedService:
+      enabled: false
+    ingressEndpoint:
+      hostname: api.pattie.cloud
 
   kubernetesCRD:
     # IngressRoute, Middleware 같은 Traefik 전용 리소스는 지금 사용하지 않음

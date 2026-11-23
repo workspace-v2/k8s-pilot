@@ -1,25 +1,28 @@
-replicaCount: 3
-labels:
-  name: amumal-backend
-  tier: backend
-  env: dev
-  partOf: amumal
+replicaCount: 2
 image:
-  repository: ghcr.io/pattie-assignments/community-service
-  tag: "1e27cc14e960167518550e8661501c3d36af698a"
-  pullPolicy: IfNotPresent
+  repository: localhost/community-service
+  tag: "25aebbc"
+  pullPolicy: Never
+  pullSecret: ""
+existingSecret: community-service-credentials
 service:
   type: ClusterIP
   port: 80
-configMap:
-  name: amumal-db-config
-  data:
-    SPRING_DATASOURCE_URL: "jdbc:postgresql://amumal-database.cbysg4i2eto5.ap-northeast-2.rds.amazonaws.com:5432/amumal"
-existingSecrets:
-  imagePullSecret: ghcr-secret
-  databaseSecret: amumal-db-secret
 ingress:
   className: traefik
-  host: api.pattie.cloud
   path: /
   pathType: Prefix
+  host: api.pattie.cloud
+storage:
+  nfsServer: ""
+  path: /uploads
+mysql:
+  enabled: true
+  host: mysql
+  port: 3306
+  database: community
+  username: community
+redis:
+  enabled: true
+  host: redis
+  port: 6379

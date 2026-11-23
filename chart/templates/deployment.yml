@@ -1,83 +1,75 @@
 apiVersion: apps/v1
 kind: Deployment
-
 metadata:
-  name: amumal-backend-deployment
-  labels:
-    name: "{{ .Values.labels.name }}"
-    tier: "{{ .Values.labels.tier }}"
-    env: "{{ .Values.labels.env }}"
-    part-of: "{{ .Values.labels.partOf }}"
-
+  name: community-service
 spec:
   replicas: {{ .Values.replicaCount }}
-
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
-    matchLabels:
-      name: "{{ .Values.labels.name }}"
-      env: "{{ .Values.labels.env }}"
-
+    matchLabels: { app: community-service }
   template:
     metadata:
-      labels:
-        name: "{{ .Values.labels.name }}"
-        tier: "{{ .Values.labels.tier }}"
-        env: "{{ .Values.labels.env }}"
-        part-of: "{{ .Values.labels.partOf }}"
-
+      labels: { app: community-service }
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yml") . | sha256sum }}
     spec:
+      enableServiceLinks: false
+      automountServiceAccountToken: false
+      {{- with .Values.image.pullSecret }}
       imagePullSecrets:
-        - name: "{{ .Values.existingSecrets.imagePullSecret }}"
-
+        - name: {{ . | quote }}
+      {{- end }}
+      nodeSelector: { k8s-pilot/worker: "true" }
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels: { app: community-service }
+      tolerations:
+        - { key: node.kubernetes.io/not-ready, operator: Exists, effect: NoExecute, tolerationSeconds: 45 }
+        - { key: node.kubernetes.io/unreachable, operator: Exists, effect: NoExecute, tolerationSeconds: 45 }
+      securityContext:
+        fsGroup: 1000
       containers:
-        - name: amumal-backend
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
-
-          env:
-            - name: SPRING_DATASOURCE_URL
-              valueFrom:
-                configMapKeyRef:
-                  name: amumal-db-config
-                  key: SPRING_DATASOURCE_URL
-
-            - name: SPRING_DATASOURCE_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ .Values.existingSecrets.databaseSecret }}"
-                  key: SPRING_DATASOURCE_USERNAME
-
-            - name: SPRING_DATASOURCE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: "{{ .Values.existingSecrets.databaseSecret }}"
-                  key: SPRING_DATASOURCE_PASSWORD
-
+        - name: community-service
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: 3000
-              protocol: TCP
-
+            - { name: http, containerPort: 3000 }
+            - { name: management, containerPort: 3001 }
+          envFrom:
+            - configMapRef: { name: community-service }
+          env:
+            {{- range $key := list "DB_PASSWORD" "REDIS_PASSWORD" "JWT_SECRET" }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef: { name: {{ $.Values.existingSecret | quote }}, key: {{ $key }} }
+            {{- end }}
+          resources:
+            requests: { cpu: 150m, memory: 512Mi }
+            limits: { memory: 1200Mi }
           startupProbe:
-            httpGet:
-              path: /v1/actuator/health
-              port: http
-            initialDelaySeconds: 14
-            failureThreshold: 18
-            periodSeconds: 3
-
+            httpGet: { path: /v1/actuator/health/readiness, port: management }
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 60
           readinessProbe:
-            httpGet:
-              path: /v1/actuator/health/readiness
-              port: http
-            initialDelaySeconds: 0
+            httpGet: { path: /v1/actuator/health/readiness, port: management }
             periodSeconds: 10
-            failureThreshold: 5
-
+            timeoutSeconds: 4
           livenessProbe:
-            httpGet:
-              path: /v1/actuator/health/liveness
-              port: http
-            initialDelaySeconds: 0
-            periodSeconds: 10
+            httpGet: { path: /v1/actuator/health/liveness, port: management }
+            periodSeconds: 15
+            timeoutSeconds: 4
             failureThreshold: 5
+          volumeMounts:
+            - { name: uploads, mountPath: /app/uploads }
+      volumes:
+        - name: uploads
+          persistentVolumeClaim: { claimName: community-service-uploads-rwx }

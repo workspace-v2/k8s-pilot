@@ -1,0 +1,5 @@
+apiVersion: v2
+name: blue-green-lab
+description: Internal Burgerpedia Blue-Green promotion lab
+type: application
+version: 0.1.0

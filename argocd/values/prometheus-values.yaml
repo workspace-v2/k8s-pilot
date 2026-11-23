@@ -26,3 +26,24 @@ alertmanager:
 prometheus-pushgateway:
   # Pushgateway는 단발성 작업 메트릭 수집용이므로, 현재 환경에서는 사용하지 않는다.
   enabled: false
+
+scrapeConfigs:
+  community-service:
+    enabled: true
+    job_name: community-service
+    scrape_interval: 15s
+    metrics_path: /actuator/prometheus
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: [community-service]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app, __meta_kubernetes_pod_container_port_name, __meta_kubernetes_pod_ready]
+        regex: community-service;management;true
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_pod_template_hash]
+        target_label: revision
