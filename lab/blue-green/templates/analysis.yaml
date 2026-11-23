@@ -1,0 +1,95 @@
+{{- if .Values.promotionGate.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Release.Name }}-preview-smoke
+spec:
+  args:
+    - name: expected-revision
+  metrics:
+    - name: preview-brands
+      count: 1
+      failureLimit: 0
+      provider:
+        job:
+          spec:
+            backoffLimit: 0
+            activeDeadlineSeconds: 90
+            template:
+              spec:
+                automountServiceAccountToken: false
+                restartPolicy: Never
+                containers:
+                  - name: preview-smoke
+                    image: curlimages/curl:8.12.1
+                    env:
+                      - name: PREVIEW_URL
+                        value: {{ printf "http://%s-preview/v1/brands" .Release.Name | quote }}
+                      - name: EXPECTED_REVISION
+                        value: {{ "{{args.expected-revision}}" | quote }}
+                    command:
+                      - /bin/sh
+                      - -eu
+                      - -c
+                      - |
+                        headers=$(mktemp)
+                        trap 'rm -f "$headers"' EXIT
+                        for attempt in 1 2 3 4 5 6 7 8; do
+                          if status=$(curl --silent --show-error --max-time 5 \
+                              --dump-header "$headers" --output /dev/null \
+                              --write-out '%{http_code}' "$PREVIEW_URL"); then
+                            revision=$(awk 'tolower($1)=="x-app-revision:" {gsub(/\r/, "", $2); print $2}' "$headers")
+                            printf 'preview status=%s revision=%s expected=%s\n' "$status" "$revision" "$EXPECTED_REVISION"
+                            if [ "$revision" = "$EXPECTED_REVISION" ]; then
+                              test "$status" = 200
+                              exit 0
+                            fi
+                          fi
+                          sleep 1
+                        done
+                        echo 'Preview did not serve the expected revision' >&2
+                        exit 1
+{{- end }}
+{{- if .Values.postPromotion.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ .Release.Name }}-active-errors
+spec:
+  args:
+    - name: revision
+  metrics:
+    - name: brands-5xx-ratio
+      initialDelay: 15s
+      interval: 15s
+      count: 18
+      failureLimit: 0
+      inconclusiveLimit: 16
+      successCondition: result[0] >= 0 && result[0] < 0.10
+      failureCondition: result[0] >= 0.10
+      provider:
+        prometheus:
+          address: {{ .Values.postPromotion.prometheusAddress | quote }}
+          query: |
+            (
+              (
+                sum(increase(http_server_requests_seconds_count{
+                  job="kubernetes-pods",namespace="{{ .Release.Namespace }}",
+                  rollouts_pod_template_hash="{{ "{{args.revision}}" }}",uri="/brands",status=~"5.."
+                }[3m])) or vector(0)
+              )
+              /
+              sum(increase(http_server_requests_seconds_count{
+                job="kubernetes-pods",namespace="{{ .Release.Namespace }}",
+                rollouts_pod_template_hash="{{ "{{args.revision}}" }}",uri="/brands"
+              }[3m]))
+              and
+              (
+                sum(increase(http_server_requests_seconds_count{
+                  job="kubernetes-pods",namespace="{{ .Release.Namespace }}",
+                  rollouts_pod_template_hash="{{ "{{args.revision}}" }}",uri="/brands"
+                }[3m])) >= 10
+              )
+            ) or vector(-1)
+{{- end }}
