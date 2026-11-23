@@ -7,7 +7,7 @@ spec:
   project: default
 
   source:
-    repoURL: https://github.com/pattie-assignments/k8s-pilot.git
+    repoURL: https://github.com/workspace-v2/k8s-pilot.git
     targetRevision: main
     path: argocd/applications
 
