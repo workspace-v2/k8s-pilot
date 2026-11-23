@@ -1,8 +1,8 @@
 image:
-  ref: "ghcr.io/workspace-v2/community-service-blue-green-lab:bc2d7244b747537bd5e5957510bbfc35cf0b1139@sha256:d39583c4e8f319b90796476961182d2e403ec0f6dedb3f94f22d534de9832dda"
+  ref: "ghcr.io/workspace-v2/community-service-blue-green-lab:bc2d7244b747537bd5e5957510bbfc35cf0b1139@sha256:39910814939fb2fc713f4284d20e182b67d561cdf425dd5319c4f3916a078b93"
   pullSecret: blue-green-lab-ghcr
 lab:
-  revision: "bc2d7244-repeat-20261123170606-1"
+  revision: "bc2d7244b747537bd5e5957510bbfc35cf0b1139"
 promotionGate:
   enabled: true
 postPromotion:
