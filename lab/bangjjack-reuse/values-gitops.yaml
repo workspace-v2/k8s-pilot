@@ -1,4 +1,4 @@
 image:
-  ref: ghcr.io/workspace-v2/bangjjack-gitops-reuse-lab@sha256:337fb05311ffb321444f38bc13a5df6652ecde7e11ea83f38784ab14bd283470
+  ref: ghcr.io/workspace-v2/bangjjack-gitops-reuse-lab:5c44e95938c7bf88c02176976b22bed3d6ba5308@sha256:b8f4bc0889d8b95a4acb084b92db19e0ee223b00e4be7a4cc15238ba21ea3e7c
 lab:
-  revision: 5e467d7bb8fb7df6a8520bddd42ad0bd4e149e16
+  revision: 5c44e95938c7bf88c02176976b22bed3d6ba5308
