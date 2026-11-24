@@ -18,7 +18,7 @@ spec:
           image: mysql:8.0.46
           args: ["--innodb-buffer-pool-size=64M", "--performance-schema=OFF"]
           env:
-            - { name: MYSQL_DATABASE, value: bangjjack }
+            - { name: MYSQL_DATABASE, value: bangjjack_reuse }
             - { name: MYSQL_USER, value: bangjjack }
             - name: MYSQL_PASSWORD
               valueFrom:

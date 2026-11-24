@@ -32,7 +32,7 @@ spec:
                 secretKeyRef: { name: {{ $.Values.credentialsSecret }}, key: {{ $key }} }
             {{- end }}
             - { name: SPRING_PROFILES_ACTIVE, value: dev }
-            - { name: DB_URL, value: "jdbc:mysql://mysql:3306/bangjjack?allowPublicKeyRetrieval=true&sslMode=DISABLED" }
+            - { name: DB_URL, value: "jdbc:mysql://mysql:3306/bangjjack_reuse?allowPublicKeyRetrieval=true&sslMode=DISABLED" }
             - { name: DB_USER, value: bangjjack }
             - { name: REDIS_HOST, value: redis }
             - { name: SERVER_URI, value: "http://localhost:8080" }
