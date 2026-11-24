@@ -25,10 +25,12 @@ spec:
           image: {{ required "image.ref is required" .Values.image.ref | quote }}
           ports:
             - { name: management, containerPort: 8081 }
-          envFrom:
-            - secretRef:
-                name: {{ .Values.credentialsSecret }}
           env:
+            {{- range $key := list "DB_PASSWORD" "REDIS_PASSWORD" "JWT_ACCESS" "DEV_SECRET" "GOOGLE_CLIENT_ID" "GOOGLE_CLIENT_SECRET" }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef: { name: {{ $.Values.credentialsSecret }}, key: {{ $key }} }
+            {{- end }}
             - { name: SPRING_PROFILES_ACTIVE, value: dev }
             - { name: DB_URL, value: "jdbc:mysql://mysql:3306/bangjjack?allowPublicKeyRetrieval=true&sslMode=DISABLED" }
             - { name: DB_USER, value: bangjjack }
