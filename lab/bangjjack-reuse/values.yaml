@@ -1,0 +1,6 @@
+image:
+  ref: ""
+  pullSecret: bangjjack-ghcr
+lab:
+  revision: ""
+credentialsSecret: bangjjack-reuse-credentials

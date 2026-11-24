@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bangjjack-reuse
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/workspace-v2/k8s-pilot.git
+    targetRevision: cicd/bangjjack-reuse-lab
+    path: lab/bangjjack-reuse
+    helm:
+      valueFiles: [values-gitops.yaml]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: bangjjack-reuse
+  syncPolicy:
+    automated:
+      selfHeal: true
+    syncOptions:
+      - FailOnSharedResource=true
